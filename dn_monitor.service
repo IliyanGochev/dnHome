@@ -1,0 +1,17 @@
+[Unit]
+Description=dotnet Home Monitor
+After=network.target
+
+[Service]
+Environment=DOTNET_ROOT=/opt/dotnet
+Restart=always
+RestartSec=30
+Type=simple
+SyslogIdentifier=notes-core
+WorkingDirectory=/home/pi/dnHome/MonitoringService
+ExecStart=/home/pi/dnHome/MonitoringService/bin/Release/net5.0/MonitoringService
+User=pi
+Group=pi
+
+[Install]
+WantedBy=multi-user.target

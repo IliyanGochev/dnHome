@@ -1,0 +1,57 @@
+{
+  "boilerConfig": {
+    "isBoilerEnabled": true,
+    "stopBoiler": false,
+    "serialPort": "/dev/ttyUSB0"
+  },
+  "dhwHeatingConfig": {
+    "min": 45,
+    "max": 60,
+    "heatingPeriods": [
+      {
+        "startHeatingTime": {
+          "ticks": 0,
+          "days": 0,
+          "hours": 0,
+          "milliseconds": 0,
+          "minutes": 0,
+          "seconds": 0,
+          "totalDays": 0,
+          "totalHours": 0,
+          "totalMilliseconds": 0,
+          "totalMinutes": 0,
+          "totalSeconds": 0
+        },
+        "stopHeatingTime": {
+          "ticks": 0,
+          "days": 0,
+          "hours": 0,
+          "milliseconds": 0,
+          "minutes": 0,
+          "seconds": 0,
+          "totalDays": 0,
+          "totalHours": 0,
+          "totalMilliseconds": 0,
+          "totalMinutes": 0,
+          "totalSeconds": 0
+        },
+        "hysteresis": 10
+      }
+    ],
+    "isDHWHeatingEnabled": true,
+    "useBoiler": false,
+    "useElectricity": true,
+    "forceReheat": false,
+    "dhwPumpPinID": 21,
+    "electricHeatingPinID": 26,
+    "dhwTemperatureProbeID": "28-0207917763b8"
+  },
+  "circulationConfig": {
+    "isCirculationEnabled": true,
+    "circulationPeriods": [
+      {},
+      {}
+    ],
+    "circulationPumpPinID": 20
+  }
+}
