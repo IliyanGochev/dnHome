@@ -92,7 +92,6 @@ namespace MonitoringService.Services
                 {
                     if (response.FFWorkTime > 0)
                     {
-
                         var resetFFResult = commandProcessor.ProcessCommand(resetFeederCounterCommand);
                         if (resetFFResult != null && resetFFResult is SuccessResponse)
                         {

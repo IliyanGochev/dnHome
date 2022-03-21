@@ -1,11 +1,11 @@
+using DataModels;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using System.Threading.Tasks;
-using System.Threading;
 using System;
-using System.Device.Gpio;
 using System.Collections.Generic;
-using DataModels;
+using System.Device.Gpio;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace MonitoringService
 {
@@ -18,18 +18,44 @@ namespace MonitoringService
 
         private readonly int PinID = Configuration.GetCirculationConfig().CirculationPumpPinID;
 
+        private static readonly TimeSpan circulationOnPeriod = new TimeSpan(0, 15, 0);
+        private static readonly TimeSpan circulationOffPeriod = new TimeSpan(24, 0, 0);
 
-        private List<CirculationPeriod> circulationPeriods = new List<CirculationPeriod> {
+        // Weekday circulation periods
+        private List<CirculationPeriod> weeklyCirculationPeriods = new List<CirculationPeriod> {
             new CirculationPeriod() {
                 Start = new TimeSpan(22,30,0),
-                End = new TimeSpan(6, 0,0),
-                Period = new TimeSpan(8,30,0)
+                End = new TimeSpan(6, 30,0),
+                Period = circulationOffPeriod
             },
             new CirculationPeriod() {
-                Start = new TimeSpan(6,5,0),
-                End = new TimeSpan(22,15,0),
-                Period = new TimeSpan(0,15,0)
+                Start = new TimeSpan(6,35,0),
+                End = new TimeSpan(10,10,0),
+                Period = circulationOnPeriod
+            },
+            new CirculationPeriod() {
+                Start = new TimeSpan(12,0,0),
+                End = new TimeSpan(14,0,0),
+                Period = circulationOnPeriod
+            },
+            new CirculationPeriod() {
+                Start = new TimeSpan(16, 30, 0),
+                End = new TimeSpan(22, 25, 0),
+                Period = circulationOnPeriod
             }
+        };
+
+        private List<CirculationPeriod> weekendCirculationPeriods = new List<CirculationPeriod> {
+             new CirculationPeriod() {
+                Start = new TimeSpan(22,30,0),
+                End = new TimeSpan(6, 50,0),
+                Period = circulationOffPeriod
+            },
+            new CirculationPeriod() {
+                Start = new TimeSpan(6,55,0),
+                End = new TimeSpan(22,10,0),
+                Period = circulationOnPeriod
+            },
         };
 
         public CirculationMonitor(ILogger<CirculationMonitor> logger)
@@ -57,16 +83,16 @@ namespace MonitoringService
             return !(end < now && now < start);
         }
 
-        private TimeSpan GetPeriodOffDuration()
+        private TimeSpan GetPeriodOffDuration(List<CirculationPeriod> periods)
         {
-            foreach (var period in circulationPeriods)
+            foreach (var period in periods)
             {
                 if (IsPeriodInTimeSpan(period))
                 {
                     return period.Period;
                 }
             }
-            return new TimeSpan(1, 0, 0);
+            return new TimeSpan(2, 0, 0);
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -75,35 +101,50 @@ namespace MonitoringService
             {
                 if (Configuration.GetCirculationConfig().IsCirculationEnabled)
                 {
-                    // Select Circualtion Period configuration based on the current time
-                    offPeriodDuration = GetPeriodOffDuration();
-
-                    //_logger.LogInformation("CirculationMonitor running at: {time}", DateTimeOffset.Now);
-                    if ((DateTimeOffset.Now - _lastRunTime > offPeriodDuration) && IsRunning == false)
+                    var dow = DateTime.UtcNow.DayOfWeek;
+                    if (dow != DayOfWeek.Saturday | dow != DayOfWeek.Sunday)
                     {
-                        _lastRunTime = DateTimeOffset.Now;
-                        gpioController.Write(PinID, PinValue.Low);
-                        _logger.LogInformation("Starting circulation at: {time}", DateTimeOffset.UtcNow);
-                        IsRunning = true;
-                    }
-                    else if (IsRunning)
-                    {
-                        if (DateTimeOffset.Now - _lastRunTime > circulationDuration)
-                        {
-                            // Stop circulation
-                            gpioController.Write(PinID, PinValue.High);
-                            IsRunning = false;
-                            _logger.LogInformation("Stopping circulation at: {time}", DateTimeOffset.UtcNow);
-                        }
+                        CheckRunningConditions(weeklyCirculationPeriods);
                     }
                     else
                     {
-                        _logger.LogInformation("Still {time} left until next cycle", offPeriodDuration - (DateTimeOffset.Now - _lastRunTime));
+                        CheckRunningConditions(weekendCirculationPeriods);
                     }
+
                 }
                 // TODO(Iliyan): Pull up the interval
                 var updateInterval = 60000; // 60 Seconds
                 await Task.Delay(updateInterval, stoppingToken);
+            }
+        }
+
+        private void CheckRunningConditions(List<CirculationPeriod> periods)
+        {
+            // Select Circualtion Period configuration based on the current time
+            offPeriodDuration = GetPeriodOffDuration(periods);
+
+            //_logger.LogInformation("CirculationMonitor running at: {time}", DateTimeOffset.Now);
+            if ((DateTimeOffset.Now - _lastRunTime > offPeriodDuration) && IsRunning == false)
+            {
+                _lastRunTime = DateTimeOffset.Now;
+                gpioController.Write(PinID, PinValue.Low);
+                _logger.LogInformation("Starting circulation at: {time}", DateTimeOffset.UtcNow);
+                IsRunning = true;
+            }
+            else if (IsRunning)
+            {
+                if (DateTimeOffset.Now - _lastRunTime > circulationDuration)
+                {
+                    // Stop circulation
+                    gpioController.Write(PinID, PinValue.High);
+                    IsRunning = false;
+                    _logger.LogInformation("Stopping circulation at: {time}", DateTimeOffset.UtcNow);
+                }
+            }
+            else
+            {
+                _logger.LogInformation("Still {time} left until next cycle",
+                    offPeriodDuration - (DateTimeOffset.Now - _lastRunTime));
             }
         }
     }

@@ -105,7 +105,13 @@ namespace MonitoringService.Services
             }else {
                 currentBoilerSample = dbContext.LatestBoiler.AsEnumerable().First();
             }
-            var waterTemp = currentBoilerSample.DHW;
+
+            short waterTemp = -1;
+
+            if (DateTime.UtcNow - currentBoilerSample.Timestamp < new TimeSpan(0, 5, 0))
+            {
+                waterTemp = currentBoilerSample.DHW;
+            }
 
             // Check if we have stopped the heating process manually
             if (!config.IsDHWHeatingEnabled)
@@ -115,17 +121,8 @@ namespace MonitoringService.Services
                 StopBoilerHeating();
                 return;
             }
-/*
-            if (waterTemp == -200){
-                if (config.UseBoiler){
-                    StartBoilerHeating();
-                }
-                if (config.UseElectricity){
-                    StartElectricHeating();
-                }
-            }
-*/
-            if (config.UseBoiler)
+
+            if (config.UseBoiler) // Pellet boiler
             {
                 var ct = currentBoilerSample.CurrentTemperature;
                 Console.WriteLine("Boiler: " + ct );
