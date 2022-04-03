@@ -10,8 +10,11 @@ namespace MonitoringService
 {
     public class Program
     {
-        public static void Main(string[] args) {
-                 CreateHostBuilder(args).Build().Run();
+        public static void Main(string[] args)
+        {
+            var host = CreateHostBuilder(args).Build();
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            host.Run();
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

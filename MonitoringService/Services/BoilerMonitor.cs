@@ -110,7 +110,7 @@ namespace MonitoringService.Services
                 }
                 catch (Exception e)
                 {
-                    logger.LogError("Exception saving Boiler sample data: {0}", e.Message);
+                    logger.LogError("Exception saving Boiler sample data: {0}\r\n{1}", e.Message, e.InnerException);
                 }
             }
             else
