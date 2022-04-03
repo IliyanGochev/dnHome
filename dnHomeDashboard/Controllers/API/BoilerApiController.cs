@@ -53,7 +53,7 @@ namespace dnHomeDashboard.Controllers.API
         }
 
         // TODO(iliyan): pull out magic / config numbers
-        static double kgPerHour = 30.0;
+        static double kgPerHour = 24.5;
         static double feedTime = kgPerHour / 3600;
 
         [HttpGet]

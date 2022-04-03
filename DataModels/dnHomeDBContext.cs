@@ -15,7 +15,7 @@ namespace DataModels {
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {           
-            optionsBuilder.UseNpgsql(@"Host=localhost;Database=dnhomeautomation;Username=pi;Password=sl0jn4pi");
+            optionsBuilder.UseNpgsql(@"Host=192.168.1.10;Database=dnhomeautomation;Username=pi;Password=sl0jn4pi");
         }
     }
 }

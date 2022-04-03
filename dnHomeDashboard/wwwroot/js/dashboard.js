@@ -10,7 +10,7 @@ function updateDHWWidget() {
 function updateBoilerWidget() {
     $.get("/api/v1/boiler/currentTemp",
         function (data) {
-
+            console.log(data)
             $('#boiler-current-temp').html("Котел " + data["currentTemperature"] + "°");
 
             switch (data['power']) {

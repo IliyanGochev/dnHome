@@ -57,7 +57,7 @@ namespace MonitoringService.Services
             while (!stoppingToken.IsCancellationRequested)
             {
                 //logger.LogInformation("DHWMonitor running at: {time}", DateTimeOffset.Now);
-                MonitorDHW();
+                //MonitorDHW();
                 UpdateConfig();
                 CheckTemperatureRules();
 
@@ -100,10 +100,20 @@ namespace MonitoringService.Services
         {
             var config = GetHeatingConfig();
             //var waterTemp = ReadTemperatureSensor(sensorID);
-            if (currentBoilerSample != null){
-                dbContext.Entry(currentBoilerSample).Reload();
-            }else {
-                currentBoilerSample = dbContext.LatestBoiler.AsEnumerable().First();
+            try
+            {
+                if (currentBoilerSample != null)
+                {
+                    dbContext.Entry(currentBoilerSample).Reload();
+                }
+                else
+                {
+                    currentBoilerSample = dbContext.LatestBoiler.AsEnumerable().First();
+                }
+            }
+            catch (Exception e)
+            {
+                logger.LogCritical("Error accessing database information: {0}", e.Message);
             }
 
             short waterTemp = -1;
@@ -125,31 +135,31 @@ namespace MonitoringService.Services
             if (config.UseBoiler) // Pellet boiler
             {
                 var ct = currentBoilerSample.CurrentTemperature;
-                Console.WriteLine("Boiler: " + ct );
+                Console.WriteLine("Boiler: " + ct);
                 Console.WriteLine("Boiler heating: " + isBoilerHeating);
                 Console.WriteLine("Electric heating: " + isElectricallyHeating);
                 var delta = ct - waterTemp;
-                if (delta > 5.0f )
-                {                    
-                    Console.WriteLine("Boiler - DHW delta: " + delta);                    
-                   if (waterTemp >= config.Max)
+                if (delta > 5.0f)
+                {
+                    Console.WriteLine("Boiler - DHW delta: " + delta);
+                    if (waterTemp >= config.Max)
                     {
                         // Stop heating
                         Console.WriteLine("DHW at or above 52");
-                        waterOverheated = true; 
+                        waterOverheated = true;
                         StopBoilerHeating();
                     }
                     else if ((config.Min < waterTemp || waterTemp < config.Max) && waterOverheated && isBoilerHeating)
-                    {                        
+                    {
                         Console.WriteLine("Cooling the boiler...");
                         StopBoilerHeating();
                     }
                     else if (waterTemp <= config.Min)
-                    {                        
+                    {
                         Console.WriteLine("Restarting heating...");
                         StartBoilerHeating();
                         waterOverheated = false;
-                    }                                  
+                    }
                 }
                 else
                 {
@@ -188,20 +198,25 @@ namespace MonitoringService.Services
 
                 }
                 */
-                if (waterTemp < config.Min) {
+                if (waterTemp < config.Min)
+                {
                     StartElectricHeating();
-                } else if (waterTemp >= config.Max) {
+                }
+                else if (waterTemp >= config.Max)
+                {
                     StopElectricHeating();
                 }
-            } else { 
-                StopElectricHeating(); 
+            }
+            else
+            {
+                StopElectricHeating();
             }
 
             if (config.ForceReheat)
             {
                 StartElectricHeating();
                 StartBoilerHeating();
-                
+
             }
         }
 
@@ -253,7 +268,7 @@ namespace MonitoringService.Services
         private void MonitorDHW()
         {
 
-            var temperature =  -200; // ReadTemperatureSensor(sensorID);
+            var temperature = -200; // ReadTemperatureSensor(sensorID);
 
             if (temperature > -200)
             {
