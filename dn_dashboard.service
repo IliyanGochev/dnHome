@@ -10,7 +10,7 @@ EnvironmentFile=
 Type=simple
 SyslogIdentifier=notes-core
 WorkingDirectory=/home/pi/dnHome/dnHomeDashboard
-ExecStart=/usr/local/bin/dotnet /home/pi/dnHome/dnHomeDashboard/bin/Release/net5.0/dnHomeDashboard.dll
+ExecStart=/usr/local/bin/dotnet /home/pi/dnHome/dnHomeDashboard/bin/Release/net6.0/dnHomeDashboard.dll
 User=pi
 Group=pi
 
