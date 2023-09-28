@@ -200,6 +200,22 @@ namespace MonitoringService.Services
                 */
                 if (waterTemp < config.Min)
                 {
+                    // Don't heat water during car charging periods
+                    if(!IsHeatingPeriod( new HeatingPeriod {
+                        StartHeatingTime = new TimeSpan(22, 59, 0),
+                        StopHeatingTime = new TimeSpan(4, 55,0)
+                    }))
+                    {
+                        StartElectricHeating();
+                    }
+                    else StopElectricHeating();
+                }
+                else if (IsHeatingPeriod(new HeatingPeriod{
+                        StartHeatingTime = new TimeSpan(5, 0, 0),
+                        StopHeatingTime = new TimeSpan(7, 0, 0)
+                    }))                
+                {
+                    // Preheat in the morning
                     StartElectricHeating();
                 }
                 else if (waterTemp >= config.Max)

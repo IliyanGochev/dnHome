@@ -7,14 +7,16 @@ namespace MonitoringService.Communications.Commands
     class StartBoilerCommand :CommandBase, ICommand
     {
         protected override byte commandId { get; set; } = 0x03;
-        protected override byte[] requestData { get; set; } = new byte[] {0x02, 0x02};
+        protected override byte[] requestData { get; set; } = new byte[] {0x01, 0x02};
         protected override byte[] responseData { get; set; }
-
+/*
         public override byte[] GetRequestData()
         {
-            return new byte[] {0x5A, 0x5A, 0x04, 0x03, 0x02, 0x02, 0xFA};
+            return new byte[] {0x5A, 0x5A, 0x04, 0x03, 0x02, 0x03, 0xFA};
         }
-        public override IResponse ProcessResponseData(byte[] response)
+*/  
+
+      public override IResponse ProcessResponseData(byte[] response)
         {
             try
             {
