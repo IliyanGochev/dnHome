@@ -18,8 +18,6 @@ namespace DataModels
         private static readonly string configFilePath = "/home/pi/dnHome/config.json";
         private static void Init()
         {
-            // TODO: Move out?
-            
             if (File.Exists(configFilePath))
             {
                 var jsonString = File.ReadAllText(configFilePath);
@@ -28,6 +26,7 @@ namespace DataModels
             else
             {
                 config = new Config();
+                SaveNewConfig();
             }
         }
         public static DHWHeatingConfig GetDHWConfig()
@@ -48,7 +47,7 @@ namespace DataModels
                     new HeatingPeriod()
                     {
                         StartHeatingTime = new TimeSpan(7,30,0),
-                        StopHeatingTime = new TimeSpan(23,30,0),
+                        StopHeatingTime = new TimeSpan(22,45,0),
                         Hysteresis = 4
                     }
                 },
@@ -70,10 +69,16 @@ namespace DataModels
             return result;
         }
 
+        public static GMailConfig GetGMailConfig()
+        {
+            Init();
+            return new GMailConfig();
+        }
+
         public static BoilerConfig GetBoilerConfig()
         {
             Init();
-            var result = new BoilerConfig() {IsBoilerEnabled = true, StopBoiler = false};
+            var result = new BoilerConfig() {IsBoilerEnabled = true, StopBoiler = false, Mode = BoilerMode.Auto, Priority = BoilerPriority.CHPriority};
            
             if (config?.BoilerConfig != null)
                 result = config.BoilerConfig;
@@ -82,6 +87,11 @@ namespace DataModels
                 config.BoilerConfig = result;
             }
             return result;
+        }
+
+        public static void UpdateBoilerConfig(BoilerConfig cfg)
+        {
+            config.BoilerConfig = cfg;
         }
 
         public static CirculationConfig GetCirculationConfig()
@@ -138,13 +148,15 @@ namespace DataModels
                 {
                     if (config == null)
                         Console.WriteLine("Config is null");
-                    else if (config.BoilerConfig == null)
+                    if (config.BoilerConfig == null)
                     {
-                        Console.WriteLine("Boiler config is null");
-                    }else if (config.DhwHeatingConfig == null)
+                        Console.WriteLine("Boiler config is NULL");
+                    }
+                    if (config.DhwHeatingConfig == null)
                     {
                         Console.WriteLine("DHW Config is NULL!");
-                    }else if (config.CirculationConfig == null)
+                    }
+                    if (config.CirculationConfig == null)
                     {
                         Console.WriteLine("Circulation Config is NULL!");
                     }

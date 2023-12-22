@@ -84,6 +84,36 @@ function updateBoilerWidget() {
                     errors = "";
             }
 
+            var mode = "";
+            switch (data['mode']) {
+                case 0:
+                    mode = "StandBy";
+                    break;
+                case 1:
+                    mode = 'Auto';
+                    break;
+                case 2:
+                    mode = 'Timer';
+                    break;
+            }
+
+            var priority = "";
+
+            switch (data["state"]) {
+                case 0:
+                    priority = "Отопление";
+                    break;
+                case 2:
+                    priority = "Паралелни помпи";
+                    break;
+                case 1:
+                    priority = "DHW";
+                    break;
+                case 3:
+                    priority = "Летен режим";
+            }
+
+            $('#boiler-mode').html(mode + " / " + priority)
             $('#boiler-status').html("Статус: " + status);
             $('#boiler-power-mode').html("Режим " + powerMode);
             $('#boiler-flame').html("Огън " + data["flame"]);

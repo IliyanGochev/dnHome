@@ -41,9 +41,7 @@ namespace dnHomeDashboard.Controllers.API
                     SetTemperature = (short)Math.Round(g.Average(s => s.SetTemperature)),
                     Power = (BurningPower)Math.Round(g.Average(s => (int)s.Power))
                 });
-        }
-
-       
+        }       
 
         [HttpGet]
         [Route("currentTemp")]
@@ -52,9 +50,16 @@ namespace dnHomeDashboard.Controllers.API
             return context.LatestBoiler.AsEnumerable().First();
         }
 
+        [HttpGet]
+        [Route("latest-trend")]
+        public List<BoilerSample> latestBoilerTrend()
+        {
+            return context.Boiler.Where(x => x.Timestamp > DateTime.UtcNow.AddMinutes(-10)).ToList();
+        }
+
         // TODO(iliyan): pull out magic / config numbers
-        static double kgPerHour = 24.5;
-        static double feedTime = kgPerHour / 3600;
+        static readonly double kgPerHour = 24.5;
+        static readonly double feedTime = kgPerHour / 3600;
 
         [HttpGet]
         [Route("consumption/24hours")]

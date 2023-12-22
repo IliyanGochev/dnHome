@@ -168,38 +168,16 @@ namespace MonitoringService.Services
             }
             else
             {
-                Console.WriteLine("Not using boiler for heating DHW");
+                //Console.WriteLine("Not using boiler for heating DHW");
                 StopBoilerHeating();
             }
 
             if (config.UseElectricity)
-            {
-                // Start Heating during explicit heating periods
-                /*
-                if (config.HeatingPeriods != null && config.HeatingPeriods.Count > 0)
-                {
-                    foreach (var period in config.HeatingPeriods)
-                    {
-                        if (IsHeatingPeriod(period))
-                        {
-                            logger.LogInformation("Heating Period: " + period);
-                            if (waterTemp >= config.Max)
-                            {
-                                StopElectricHeating();
-                            }
-                            else if (waterTemp < config.Max - period.Hysteresis)
-                            {
-                                StartElectricHeating();
-                            }
-
-                            return;
-                        }
-                    }
-
-                }
-                */
+            {                
+                logger.LogInformation($"Using electricity heating... Min temp: {config.Min}, Max temp: {config.Max}");
                 if (waterTemp < config.Min)
                 {
+                    logger.LogInformation($"Water temp is lower than minimum!");
                     // Don't heat water during car charging periods
                     if(!IsHeatingPeriod( new HeatingPeriod {
                         StartHeatingTime = new TimeSpan(22, 59, 0),
@@ -283,8 +261,8 @@ namespace MonitoringService.Services
         }
         private void MonitorDHW()
         {
-
-            var temperature = -200; // ReadTemperatureSensor(sensorID);
+            var temperature = -200; 
+            // ReadTemperatureSensor(sensorID);
 
             if (temperature > -200)
             {

@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace MonitoringService.Communications.Commands
 {
@@ -12,6 +10,18 @@ namespace MonitoringService.Communications.Commands
 /*
         public override byte[] GetRequestData()
         {
+            // b1-2: 0x5A 0x5A - Header
+            // b3  : 0x04 -  lenght (includes checksum)
+            // b4  : 0x03 - commandID - change Priority and mode
+            // b5  : Mode:
+                        0x01 - StandBy
+                        0x02 - Auto
+                        0x03 - Timer
+            // b6  : Priority:
+                        0x02 - Heating
+                        0x03 - DHW Priority
+                        0x04 - Parallel Pumps
+                        0x05 - Summer Mode
             return new byte[] {0x5A, 0x5A, 0x04, 0x03, 0x02, 0x03, 0xFA};
         }
 */  

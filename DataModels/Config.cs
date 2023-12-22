@@ -23,35 +23,47 @@ namespace DataModels
     }
     public class DHWHeatingConfig
     {
-        public byte Min { get; set; }
-        public byte Max { get; set; }
+        public byte Min { get; set; } = 45;
+        public byte Max { get; set; } = 55;
         public List<HeatingPeriod> HeatingPeriods { get; set; }
-        public bool IsDHWHeatingEnabled { get; set; }
-        public bool UseBoiler { get; set; }
-        public bool UseElectricity { get; set; }
-        public bool ForceReheat { get; set; }
-        public int DHWPumpPinID { get; set; } = 21;
-        public int ElectricHeatingPinID { get; set; } = 26;
+        public bool IsDHWHeatingEnabled { get; set; } = true;
+        public bool UseBoiler { get; set; } = false;
+        public bool UseElectricity { get; set; } = true;
+        public bool ForceReheat { get; set; } = false;
+        public int DHWPumpPinID { get; set; } = 26;
+        public int ElectricHeatingPinID { get; set; } = 21;
         public string DHWTemperatureProbeID { get; set; } = "28-0207917763b8";
+    }
+
+    public class GMailConfig
+    {
+        public string User { get; set; }
+        public string Password { get; set; }
+        public string Sender { get; set; }
+        public string Receiver { get; set; }
     }
     public class BoilerConfig
     {
-        public bool IsBoilerEnabled { get; set; }
-        public bool StopBoiler { get; set; }
+        public bool IsBoilerEnabled { get; set; } = false;
+        public bool StopBoiler { get; set; } = false;
+
+        public BoilerMode Mode { get; set; } = BoilerMode.Auto;
+        public BoilerPriority Priority { get; set; } = BoilerPriority.ParallelPumps;
         public string SerialPort { get; set; } = "/dev/ttyUSB0";
     }
 
     public class CirculationConfig
     {
-        public bool IsCirculationEnabled { get; set; }
+        public bool IsCirculationEnabled { get; set; } = true;
         public List<CirculationPeriod> CirculationPeriods { get; set; }
         public int CirculationPumpPinID { get; set; } = 20;
     }
 
     public class Config
     {
-        public BoilerConfig BoilerConfig { get; set; }
-        public DHWHeatingConfig DhwHeatingConfig { get; set; }
-        public CirculationConfig CirculationConfig { get; set; }
+        public BoilerConfig BoilerConfig { get; set; } = new BoilerConfig();
+        public DHWHeatingConfig DhwHeatingConfig { get; set; } = new DHWHeatingConfig();
+        public CirculationConfig CirculationConfig { get; set; } = new CirculationConfig();
+        public GMailConfig GMailConfig { get; set; } = new GMailConfig();
     }
 }

@@ -1,10 +1,12 @@
-using System;
+﻿using System;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using DataModels;
+using MailKit.Net.Smtp;
+using MimeKit;
 using MonitoringService.Communications;
 using MonitoringService.Communications.Commands;
 
@@ -21,11 +23,13 @@ namespace MonitoringService.Services
         private readonly GeneralInformationCommand generalInformationCommand;
         private readonly ResetFeederCounterCommand resetFeederCounterCommand;
 
+        private BoilerMode currentMode;
+        private BoilerPriority currentPriority;
+
         public BoilerMonitor(ILogger<BoilerMonitor> logger)
         {
             this.logger = logger;
             dbContext = new dnHomeDBContext();
-            // TODO(iliyan): Make configurable
             commandProcessor = new SerialPortCommandProcessor(GetBoilerConfig().SerialPort);
 
             generalInformationCommand = new GeneralInformationCommand();
@@ -38,6 +42,12 @@ namespace MonitoringService.Services
                 BoilerStatus = new LatestBoilerSample();
                 dbContext.Add(BoilerStatus);
             }
+
+            var cfg = GetBoilerConfig();
+            currentMode = cfg.Mode;
+            currentPriority = cfg.Priority;
+
+            Console.WriteLine($"Boiler mode {currentMode}, priority: {currentPriority}");
         }
 
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -50,40 +60,46 @@ namespace MonitoringService.Services
             }
         }
 
+        private byte getModeByte(BoilerMode mode)
+        {
+            switch (mode)
+            {
+
+                case BoilerMode.Standby:
+                    return 0x00;
+                case BoilerMode.Auto:
+                    return 0x01;
+                case BoilerMode.Timer:
+                    return 0x02;
+                default:
+                    return 0x00;
+            }
+        }
+
+        private byte getPriorityByte(BoilerPriority priority)
+        {
+            switch (priority)
+            {
+                case BoilerPriority.DHWPriority:
+                    return 0x01;
+                case BoilerPriority.ParallelPumps:
+                    return 0x02;
+                case BoilerPriority.SummerMode:
+                    return 0x03;
+                case BoilerPriority.CHPriority:
+                default:
+                    return 0x00;
+            }
+        }
+
+        private BoilerMode previousMode { get; set; } = BoilerMode.None;
+        private BoilerPriority previousPriority { get; set; } = BoilerPriority.None;
+
+        private Errors previousErrorState { get; set; } = Errors.NoError;
+        private bool errorHandled { get; set; } = false;
+
         private void MonitorBoiler()
         {
-            var cfg = GetBoilerConfig();
-            
-            if (cfg.IsBoilerEnabled && cfg.StopBoiler)
-            {
-                var response = commandProcessor.ProcessCommand(new StopBoilerCommand());
-                if (response != null && response is SuccessResponse)
-                {
-                    logger.LogInformation("Stopping boiler by configuration request");
-                    // Set IsBoilerEnabled = false
-                    Configuration.GetBoilerConfig().IsBoilerEnabled = false;
-                    Configuration.SaveSettings();
-                }
-                else
-                {
-                    logger.LogError("Boiler not stopped!!!");
-                }
-            }
-            else if (!cfg.IsBoilerEnabled && !cfg.StopBoiler)
-            {
-                var response = commandProcessor.ProcessCommand(new StartBoilerCommand());
-                if (response != null && response is SuccessResponse)
-                {
-                    Configuration.GetBoilerConfig().IsBoilerEnabled = true;
-                    Configuration.SaveSettings();
-                    logger.LogInformation("Starting boiler...");
-                }
-                else
-                {
-                    logger.LogError("Boiler not started!!!");
-                }
-            }
-
             var result = commandProcessor.ProcessCommand(generalInformationCommand);
             if (result != null && result is BoilerSampleResponse)
             {
@@ -101,6 +117,110 @@ namespace MonitoringService.Services
                         {
                             logger.LogError("Reset Unsuccessful");
                         }
+                    }
+
+                    var cfg = GetBoilerConfig();
+                    var gmailCfg = Configuration.GetGMailConfig();
+
+
+                    // There's an error and it hasn't been handled
+                    if (response.Errors != Errors.NoError && !errorHandled)
+                    {
+                        try
+                        {
+                            var email = new MimeMessage();
+
+                            email.From.Add(new MailboxAddress("Sender Name", gmailCfg.Sender));
+                            email.To.Add(new MailboxAddress("Receiver Name", gmailCfg.Receiver));
+
+                            email.Subject = "Boiler: Ignition Fail!";
+                            if (response.Errors == Errors.IgnitionFail){
+                                email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+                                {
+                                    Text = "<b>Свършиха пелетите!!!</b>"
+                                };
+                            }
+                            else
+                            {
+                                email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+                                {
+                                    Text = "<b>Задръстване!!!</b>"
+                                };
+                            }
+
+                            using var smtp = new SmtpClient();
+                            smtp.Connect("smtp.gmail.com", 587, true);
+
+                            // Note: only needed if the SMTP server requires authentication
+                            smtp.Authenticate(gmailCfg.User, gmailCfg.Password);
+
+                            smtp.Send(email);
+                            smtp.Disconnect(true);
+                            errorHandled = true;
+                        }
+                        catch (Exception e)
+                        {
+                            logger.LogError(e.ToString());
+                        }
+                    }
+                    
+                    if (previousErrorState != Errors.NoError && response.Errors == Errors.NoError)
+                    {
+                        // Error has been cleared, reset errorHandled
+                        errorHandled = false;
+                    }
+                    previousErrorState = response.Errors;
+
+                    // start of the program, initialize the setting
+                    if (previousMode == BoilerMode.None) previousMode = response.Mode;
+                    if (previousPriority == BoilerPriority.None) previousPriority = response.State;
+
+                    currentMode = response.Mode;
+                    currentPriority = response.State;
+
+                    // Handle local change at the burner
+                    if (currentMode != previousMode)
+                    {
+                        logger.LogInformation("Mode changed at the burner!");
+                        cfg.Mode = currentMode;
+                        Configuration.UpdateBoilerConfig(cfg);
+                        Configuration.SaveSettings();
+                        previousMode = currentMode;
+                    }
+
+                    if (currentPriority != previousPriority)
+                    {
+                        logger.LogInformation("Priority changed at the burner!");
+                        cfg.Priority = currentPriority;
+                        Configuration.UpdateBoilerConfig(cfg);
+                        Configuration.SaveSettings();
+                        previousPriority = currentPriority;
+                    }
+
+                    // We've changed the config file
+                    if (cfg.Mode != currentMode || cfg.Priority != currentPriority)
+                    {
+                        logger.LogInformation($"PrevMode: {previousMode}, prevPriority: {previousPriority}\r\n currMode: {currentMode}, currPriority: {currentPriority}\r\n" +
+                                              $"cfgMode: {cfg.Mode}, cfgPriority: {cfg.Priority}");
+                        logger.LogInformation($"Changing mode to: {cfg.Mode} from {currentMode} and priority to {cfg.Priority} from {currentPriority}");
+                        try
+                        {
+                            var cmd = new ChangeModeAndPriorityCommand(getModeByte(cfg.Mode), getPriorityByte(cfg.Priority));
+                            var cmdResponse = commandProcessor.ProcessCommand(cmd);
+
+                            if (cmdResponse != null && cmdResponse is SuccessResponse)
+                            {
+                                logger.LogInformation($"Changed mode to: {cfg.Mode} and priority to {cfg.Priority}");
+                            }
+                        }
+                        catch (Exception e)
+                        {
+                            logger.LogError(e.ToString());
+                        }
+                    }
+                    else
+                    {
+                        logger.LogInformation("No change in mode and priority");
                     }
 
                     dbContext.Boiler.Add(response);

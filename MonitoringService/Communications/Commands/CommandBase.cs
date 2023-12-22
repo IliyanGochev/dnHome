@@ -16,13 +16,13 @@ namespace MonitoringService.Communications.Commands
 
         public virtual byte[] GetRequestData()
         {
-            List<byte> request = new List<byte>();
-
-            // data length = 1 byte command Id + requestData.Length + 1 byte checksum
-            request.Add((byte)(requestData.Length + 2));
-
-            // command Id
-            request.Add(commandId);
+            List<byte> request = new List<byte>
+            {
+                // data length = 1 byte command Id + requestData.Length + 1 byte checksum
+                (byte)(requestData.Length + 2),
+                // command Id
+                commandId
+            };
 
             // request data
             for (byte n = 0; n < requestData.Length; n++)

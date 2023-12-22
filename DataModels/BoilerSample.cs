@@ -5,6 +5,7 @@ namespace DataModels
 {
     public enum BoilerMode
     {
+        None = -1,
         Standby = 0,
         Auto,
         Timer
@@ -19,8 +20,9 @@ namespace DataModels
         Power3
     }
 
-    public enum OperationMode
+    public enum BoilerPriority
     {
+        None = -1,
         CHPriority = 0,
         DHWPriority,
         ParallelPumps,
@@ -55,7 +57,7 @@ namespace DataModels
         public DateTime GreykoTimestamp { get; set; }
         public BoilerMode Mode { get; set; }
         public BurnerStatus Status { get; set; }
-        public OperationMode State { get; set; } // TODO(iliyan): check the old DB for this?
+        public BoilerPriority State { get; set; } // TODO(iliyan): check the old DB for this?
         public Errors Errors { get; set; }
         public short SetTemperature { get; set; } // Do I need it in the DB?
         public short CurrentTemperature { get; set; }
@@ -79,7 +81,7 @@ namespace DataModels
         public DateTime GreykoTimestamp { get; set; }
         public BoilerMode Mode { get; set; }
         public BurnerStatus Status { get; set; }
-        public OperationMode State { get; set; } // TODO(iliyan): check the old DB for this?
+        public BoilerPriority State { get; set; } // TODO(iliyan): check the old DB for this?
         public Errors Errors { get; set; }
         public short SetTemperature { get; set; } // Do I need it in the DB?
         public short CurrentTemperature { get; set; }

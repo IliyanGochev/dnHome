@@ -41,7 +41,7 @@ namespace MonitoringService.Communications.Commands
                     GreykoTimestamp = new DateTime(2000 + int.Parse(responseData[7].ToString("X")), int.Parse(responseData[6].ToString("X")), int.Parse(responseData[5].ToString("X")),
                                         int.Parse(responseData[2].ToString("X")), int.Parse(responseData[3].ToString("X")), int.Parse(responseData[4].ToString("X"))),
                     Mode = (BoilerMode)responseData[8],
-                    State = (OperationMode)responseData[9],
+                    State = (BoilerPriority)responseData[9],
                     Status = (BurnerStatus)responseData[10],
                     Errors = ((responseData[13] & (1 << 0)) != 0? Errors.IgnitionFail : 0) | ((responseData[13] & (1 << 5)) != 0 ? Errors.PelletJam : 0),
                     SetTemperature = responseData[16],
