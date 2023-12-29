@@ -72,7 +72,11 @@ namespace DataModels
         public static GMailConfig GetGMailConfig()
         {
             Init();
-            return new GMailConfig();
+            var result = new GMailConfig();
+            if (config?.GMailConfig != null)
+                result = config.GMailConfig;
+
+            return result;
         }
 
         public static BoilerConfig GetBoilerConfig()

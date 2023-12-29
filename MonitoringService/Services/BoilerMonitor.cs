@@ -126,41 +126,13 @@ namespace MonitoringService.Services
                     // There's an error and it hasn't been handled
                     if (response.Errors != Errors.NoError && !errorHandled)
                     {
-                        try
+                        if (response.Errors == Errors.IgnitionFail)
                         {
-                            var email = new MimeMessage();
-
-                            email.From.Add(new MailboxAddress("Sender Name", gmailCfg.Sender));
-                            email.To.Add(new MailboxAddress("Receiver Name", gmailCfg.Receiver));
-
-                            email.Subject = "Boiler: Ignition Fail!";
-                            if (response.Errors == Errors.IgnitionFail){
-                                email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
-                                {
-                                    Text = "<b>Свършиха пелетите!!!</b>"
-                                };
-                            }
-                            else
-                            {
-                                email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
-                                {
-                                    Text = "<b>Задръстване!!!</b>"
-                                };
-                            }
-
-                            using var smtp = new SmtpClient();
-                            smtp.Connect("smtp.gmail.com", 587, true);
-
-                            // Note: only needed if the SMTP server requires authentication
-                            smtp.Authenticate(gmailCfg.User, gmailCfg.Password);
-
-                            smtp.Send(email);
-                            smtp.Disconnect(true);
-                            errorHandled = true;
+                            SendMail(gmailCfg, "Проблем със запалването!", "Boiler: Ignition Fail!");
                         }
-                        catch (Exception e)
+                        else if (response.Errors == Errors.IgnitionFail)
                         {
-                            logger.LogError(e.ToString());
+                            SendMail(gmailCfg, "Задръстване с пелети!", "Boiler: Pelet Jam!");
                         }
                     }
                     
@@ -186,6 +158,7 @@ namespace MonitoringService.Services
                         Configuration.UpdateBoilerConfig(cfg);
                         Configuration.SaveSettings();
                         previousMode = currentMode;
+                        SendMail(gmailCfg, $"Mode changed to: {currentMode}", "Boiler: Mode Changed!");
                     }
 
                     if (currentPriority != previousPriority)
@@ -195,6 +168,7 @@ namespace MonitoringService.Services
                         Configuration.UpdateBoilerConfig(cfg);
                         Configuration.SaveSettings();
                         previousPriority = currentPriority;
+                        SendMail(gmailCfg, $"Priority changed to: {currentPriority}", "Boiler: Priority Changed!");
                     }
 
                     // We've changed the config file
@@ -203,6 +177,7 @@ namespace MonitoringService.Services
                         logger.LogInformation($"PrevMode: {previousMode}, prevPriority: {previousPriority}\r\n currMode: {currentMode}, currPriority: {currentPriority}\r\n" +
                                               $"cfgMode: {cfg.Mode}, cfgPriority: {cfg.Priority}");
                         logger.LogInformation($"Changing mode to: {cfg.Mode} from {currentMode} and priority to {cfg.Priority} from {currentPriority}");
+                        
                         try
                         {
                             var cmd = new ChangeModeAndPriorityCommand(getModeByte(cfg.Mode), getPriorityByte(cfg.Priority));
@@ -210,7 +185,9 @@ namespace MonitoringService.Services
 
                             if (cmdResponse != null && cmdResponse is SuccessResponse)
                             {
-                                logger.LogInformation($"Changed mode to: {cfg.Mode} and priority to {cfg.Priority}");
+                                var msg = $"Changed mode to: {cfg.Mode} and priority to {cfg.Priority}";
+                                logger.LogInformation(msg);
+                                SendMail(gmailCfg, msg, "Boiler Mode Changed");
                             }
                         }
                         catch (Exception e)
@@ -236,6 +213,40 @@ namespace MonitoringService.Services
             else
             {
                 logger.LogInformation("Type of response is {0}", result?.GetType());
+            }
+        }
+
+        // TODO: Extract to utility function
+        private void SendMail(GMailConfig gmailCfg, string mailBody, string subject)
+        {
+            try
+            {
+                var email = new MimeMessage();
+
+                email.From.Add(new MailboxAddress("Sender Name", gmailCfg.Sender));
+                email.To.Add(new MailboxAddress("Receiver Name", gmailCfg.Receiver));
+
+                email.Subject = subject;
+               
+                email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
+                {
+                     Text = $"<b>{mailBody}</b>"
+                };
+               
+
+                using var smtp = new SmtpClient();
+                smtp.Connect("smtp.gmail.com", 465, true);
+
+                // Note: only needed if the SMTP server requires authentication
+                smtp.Authenticate(gmailCfg.User, gmailCfg.Password);
+
+                smtp.Send(email);
+                smtp.Disconnect(true);
+                errorHandled = true;
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e.ToString());
             }
         }
 
