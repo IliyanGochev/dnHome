@@ -126,16 +126,19 @@ namespace MonitoringService.Services
                     // There's an error and it hasn't been handled
                     if (response.Errors != Errors.NoError && !errorHandled)
                     {
+
                         if (response.Errors == Errors.IgnitionFail)
                         {
+                            logger.LogError("Ignition error");
                             SendMail(gmailCfg, "Проблем със запалването!", "Boiler: Ignition Fail!");
                         }
                         else if (response.Errors == Errors.IgnitionFail)
                         {
+                            logger.LogError("Pelet Jam Error");
                             SendMail(gmailCfg, "Задръстване с пелети!", "Boiler: Pelet Jam!");
                         }
                     }
-                    
+
                     if (previousErrorState != Errors.NoError && response.Errors == Errors.NoError)
                     {
                         // Error has been cleared, reset errorHandled
@@ -177,7 +180,7 @@ namespace MonitoringService.Services
                         logger.LogInformation($"PrevMode: {previousMode}, prevPriority: {previousPriority}\r\n currMode: {currentMode}, currPriority: {currentPriority}\r\n" +
                                               $"cfgMode: {cfg.Mode}, cfgPriority: {cfg.Priority}");
                         logger.LogInformation($"Changing mode to: {cfg.Mode} from {currentMode} and priority to {cfg.Priority} from {currentPriority}");
-                        
+
                         try
                         {
                             var cmd = new ChangeModeAndPriorityCommand(getModeByte(cfg.Mode), getPriorityByte(cfg.Priority));
@@ -195,12 +198,18 @@ namespace MonitoringService.Services
                             logger.LogError(e.ToString());
                         }
                     }
+
+
+                    var existingBoiler = dbContext.Boiler.Find(response.Timestamp);
+                    if (existingBoiler == null)
+                    {
+                        dbContext.Boiler.Add(response);
+                    }
                     else
                     {
-                        logger.LogInformation("No change in mode and priority");
-                    }
-
-                    dbContext.Boiler.Add(response);
+                        logger.LogInformation("Updating existing boiler sample, timestamp: {0}", response.Timestamp);
+                        dbContext.Entry(existingBoiler).CurrentValues.SetValues(response);
+                    }                    
                     UpdateBoilerSample(BoilerStatus, response);
                     dbContext.Update(BoilerStatus);
                     dbContext.SaveChanges();
@@ -227,12 +236,12 @@ namespace MonitoringService.Services
                 email.To.Add(new MailboxAddress("Receiver Name", gmailCfg.Receiver));
 
                 email.Subject = subject;
-               
+
                 email.Body = new TextPart(MimeKit.Text.TextFormat.Html)
                 {
-                     Text = $"<b>{mailBody}</b>"
+                    Text = $"<b>{mailBody}</b>"
                 };
-               
+
 
                 using var smtp = new SmtpClient();
                 smtp.Connect("smtp.gmail.com", 465, true);
