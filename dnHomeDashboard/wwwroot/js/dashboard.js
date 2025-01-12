@@ -128,7 +128,12 @@ function updateBoilerWidget() {
 function updateConsumptionWidget() {
     $.get("/api/v1/boiler/consumption/24hours",
         function (data) {
-            $('#boiler-24h-consumption').html("Консумация на пелети: " + data + " кг");
+            $('#boiler-24h-consumption').html("За 24 часа: " + data + " кг");
+        });
+
+    $.get("/api/v1/boiler/consumption/since-midnight",
+        function(data) {
+            $('#boiler-since-midnight-consumption').html("Консумация от полунощ: " + data + " кг");
         });
 }
 

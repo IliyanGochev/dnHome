@@ -62,8 +62,19 @@ namespace dnHomeDashboard.Controllers.API
         static readonly double feedTime = kgPerHour / 3600;
 
         [HttpGet]
+        [Route("consumption/since-midnight")]
+        public double ConsumptionSinceMidnight()
+        {
+            DateTime midnight = DateTime.Today;
+            double result = context.Boiler.Where(x => x.Timestamp >= midnight && x.FFWorkTime > 0)
+                .Select(g => g.FFWorkTime)
+                .Sum(s => s);
+            return Math.Round(result * feedTime, 2);
+        }
+
+        [HttpGet]
         [Route("consumption/24hours")]
-        public double ConsumtionFor24Hours()
+        public double ConsumptionFor24Hours()
         {
 
             double result = context.Boiler.Where(x => x.Timestamp > DateTime.UtcNow.AddHours(-24) && x.FFWorkTime > 0).Select(g => g.FFWorkTime).Sum(s => s);
