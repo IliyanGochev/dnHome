@@ -207,8 +207,10 @@ namespace MonitoringService.Services
                     }
                     else
                     {
-                        logger.LogInformation("Updating existing boiler sample, timestamp: {0}", response.Timestamp);
+                        var msg = $"Updating existing boiler sample, timestamp: {response.Timestamp}";
+                        logger.LogInformation(msg);
                         dbContext.Entry(existingBoiler).CurrentValues.SetValues(response);
+                        SendMail(gmailCfg, msg, "Record updated, not added");
                     }                    
                     UpdateBoilerSample(BoilerStatus, response);
                     dbContext.Update(BoilerStatus);
