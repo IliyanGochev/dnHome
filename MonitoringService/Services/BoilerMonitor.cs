@@ -111,7 +111,7 @@ namespace MonitoringService.Services
                         var resetFFResult = commandProcessor.ProcessCommand(resetFeederCounterCommand);
                         if (resetFFResult != null && resetFFResult is SuccessResponse)
                         {
-                            logger.LogInformation("Reset Successful");
+                            //logger.LogInformation("Reset Successful");
                         }
                         else
                         {

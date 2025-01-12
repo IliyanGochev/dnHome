@@ -37,27 +37,26 @@ namespace MonitoringService.Communications
 
         public IResponse ProcessCommand(ICommand command)
         {
-            if(portOpen){
-            Thread.Sleep(300);
-            serialPort.DiscardInBuffer();
-            serialPort.DiscardOutBuffer();
-            Thread.Sleep(300);
+            if(portOpen)
+            {
+                Thread.Sleep(300);
+                serialPort.DiscardInBuffer();
+                serialPort.DiscardOutBuffer();
+                Thread.Sleep(300);
 
-            byte[] requestData = command.GetRequestData();
-            Console.Write("Request: " + CommandBase.ByteArrayToHexString(requestData) + "\t");
-            serialPort.Write(requestData, 0, requestData.Length);
+                byte[] requestData = command.GetRequestData();
+                //Console.Write("Request: " + CommandBase.ByteArrayToHexString(requestData) + "\t");
+                serialPort.Write(requestData, 0, requestData.Length);
 
-            Thread.Sleep(500);
+                Thread.Sleep(500);
 
-            string responseData = serialPort.ReadExisting();
+                string responseData = serialPort.ReadExisting();
 
-            var responseBytes = Encoding.Unicode.GetBytes(responseData);
-            IResponse response = command.ProcessResponseData(responseBytes);
-            Console.WriteLine("Response: " + CommandBase.ByteArrayToHexString(responseBytes));
-            return response;
-            //serialPort.Close();
+                var responseBytes = Encoding.Unicode.GetBytes(responseData);
+                IResponse response = command.ProcessResponseData(responseBytes);
+                //Console.WriteLine("Response: " + CommandBase.ByteArrayToHexString(responseBytes));
+                return response;
             }
-
             return null;
         }
     }
