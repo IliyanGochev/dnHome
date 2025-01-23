@@ -16,7 +16,6 @@ namespace MonitoringService.Services
     public class BoilerMonitor : BackgroundService
     {
         private readonly ILogger<BoilerMonitor> logger;
-        private readonly dnHomeDBContext dbContext;
 
         private readonly SerialPortCommandProcessor commandProcessor;
 
@@ -29,19 +28,11 @@ namespace MonitoringService.Services
         public BoilerMonitor(ILogger<BoilerMonitor> logger)
         {
             this.logger = logger;
-            dbContext = new dnHomeDBContext();
+
             commandProcessor = new SerialPortCommandProcessor(GetBoilerConfig().SerialPort);
 
             generalInformationCommand = new GeneralInformationCommand();
             resetFeederCounterCommand = new ResetFeederCounterCommand();
-
-
-            BoilerStatus = dbContext.LatestBoiler.AsEnumerable().FirstOrDefault();
-            if (BoilerStatus == null)
-            {
-                BoilerStatus = new LatestBoilerSample();
-                dbContext.Add(BoilerStatus);
-            }
 
             var cfg = GetBoilerConfig();
             currentMode = cfg.Mode;
@@ -199,6 +190,13 @@ namespace MonitoringService.Services
                         }
                     }
 
+                    dnHomeDBContext dbContext = new dnHomeDBContext();
+                    BoilerStatus = dbContext.LatestBoiler.AsEnumerable().FirstOrDefault();
+                    if (BoilerStatus == null)
+                    {
+                        BoilerStatus = new LatestBoilerSample();
+                        dbContext.Add(BoilerStatus);
+                    }
 
                     var existingBoiler = dbContext.Boiler.Find(response.Timestamp);
                     if (existingBoiler == null)
@@ -211,7 +209,7 @@ namespace MonitoringService.Services
                         logger.LogInformation(msg);
                         dbContext.Entry(existingBoiler).CurrentValues.SetValues(response);
                         SendMail(gmailCfg, msg, "Record updated, not added");
-                    }                    
+                    }
                     UpdateBoilerSample(BoilerStatus, response);
                     dbContext.Update(BoilerStatus);
                     dbContext.SaveChanges();
@@ -219,6 +217,7 @@ namespace MonitoringService.Services
                 catch (Exception e)
                 {
                     logger.LogError("Exception saving Boiler sample data: {0}\r\n{1}", e.Message, e.InnerException);
+                    logger.LogError("Sample: {0}", response);
                 }
             }
             else
